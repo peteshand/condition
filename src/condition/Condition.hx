@@ -1,6 +1,7 @@
 package condition;
 
 import notifier.Notifier;
+import condition.Operation;
 
 /**
  * ...
@@ -9,7 +10,7 @@ import notifier.Notifier;
 class Condition extends Notifier<Bool>
 {
 	public var notifier:Notifier<Dynamic>;
-	public var operation:String;
+	public var operation:Operation;
 	public var subProp:String;
 	var targetIsFunction:Bool;
 	var testValue(get, null):Dynamic;
@@ -18,7 +19,7 @@ class Condition extends Notifier<Bool>
 	var _targetValue:Dynamic;
 	var _targetFunction:Void -> Dynamic;
 
-	public function new(notifier:Notifier<Dynamic>, _targetValue:Dynamic, operation:String="==", subProp:String=null) 
+	public function new(notifier:Notifier<Dynamic>, _targetValue:Dynamic, operation:Operation="==", subProp:String=null) 
 	{
 		this.operation = operation;
 		
@@ -69,17 +70,17 @@ class Condition extends Notifier<Bool>
 	{
 		switch (operation) 
 		{
-			case "==":
+			case Operation.EQUAL_TO:
 				return equalTo(testValue, targetValue);
-			case "!=":
+			case Operation.NOT_EQUAL_TO:
 				return notEqualTo(testValue, targetValue);
-			case "<=":
+			case Operation.LESS_THAN_OR_EQUAL_TO:
 				return lessThanOrEqualTo(testValue, targetValue);
-			case "<":
+			case Operation.LESS_THAN:
 				return lessThan(testValue, targetValue);
-			case ">=":
+			case Operation.GREATER_THAN_OR_EQUAL_TO:
 				return greaterThanOrEqualTo(testValue, targetValue);
-			case ">":
+			case Operation.GREATER_THAN:
 				return greaterThan(testValue, targetValue);
 			default:
 		}
@@ -87,7 +88,7 @@ class Condition extends Notifier<Bool>
 		return false;
 	}
 	
-	function equalTo(value1:Dynamic, value2:Dynamic) 
+	dynamic function equalTo(value1:Dynamic, value2:Dynamic) 
 	{
 		if (value1 == value2) return true;
 		return false;
@@ -126,5 +127,13 @@ class Condition extends Notifier<Bool>
 	override function toString():String
 	{
 		return "[Condition] " + testValue + " " + operation + " " + targetValue + " | " + value + " | " + (testValue == targetValue);
+	}
+
+	public function clone():Condition
+	{
+		var _clone:Condition = new Condition(notifier, _targetValue, operation, subProp);
+		_clone._targetFunction = _targetFunction;
+		_clone.targetIsFunction = targetIsFunction;
+		return _clone;
 	}
 }

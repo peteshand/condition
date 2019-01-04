@@ -1,7 +1,7 @@
 package condition;
 
 import notifier.Notifier;
-import notifier.Signal;
+import signal.Signal;
 
 /**
  * ...
@@ -13,8 +13,8 @@ interface IState
 	public var value(get, set):Null<Bool>;
 	public var onActive:Signal;
 	public var onInactive:Signal;
-	public function addURI(uri:String):Void;
-	public function addURIMask(uri:String):Void;
+	public function addURI(uri:String, wildcard:Bool=false):Void;
+	public function addURIMask(uri:String, wildcard:Bool=false):Void;
 	public function removeURI(uri:String):Void;
 	public function removeURIMask(uri:String):Void;
 	public function addCondition(notifier:Notifier<Dynamic>, value:Dynamic, operation:String = "==", subProp:String=null):Void;

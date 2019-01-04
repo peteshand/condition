@@ -3,12 +3,13 @@
 	"url": "https://github.com/peteshand/condition",
 	"license": "MIT",
 	"tags": ["condition", "state"],
-	"description": "method for defining notifier conditions and triggering state changes",
-	"version": "1.0.0",
-	"releasenote": "initial release",
+	"description": "method for defining notifier conditions to trigger state changes",
+	"version": "1.0.1",
+	"releasenote": "update dependencies",
 	"contributors": [ "p.j.shand" ],
 	"classPath": "src/",
 	"dependencies": {
-	  "notifier": ""
+		"notifier": "",
+		"signals": ""
 	}
 }

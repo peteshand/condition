@@ -1,6 +1,6 @@
 package condition;
 
-//import mantle.managers.transition.Transition;
+//import transition.Transition;
 import notifier.Notifier;
 /**
  * ...
@@ -48,16 +48,18 @@ class SceneModel extends Notifier<String>
 	{
 		if (!changeRequired(v)) return v;
 		
-		if (queueURI /*&& Transition.globalTransitioning.value*/) {
+		/*if (queueURI && Transition.globalTransitioning.value) {
+			trace("queue");
 			queue(v, updateHistory);
 		}
-		else {
+		else {*/
 			goBackUri = null;
 			_value = v;
+			trace("_value = " + _value);
 			if (updateHistory) _history.push(v);
 			//if (activityModel != null) activityModel.animating();
 			this.dispatch();
-		}
+		//}
 		return v;
 	}
 	

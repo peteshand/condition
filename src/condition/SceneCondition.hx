@@ -8,21 +8,25 @@ import notifier.Notifier;
  */
 class SceneCondition extends Condition
 {
-	var wildcard:Bool;
+	public var wildcard:Bool;
 	var wildcardValue:String;
 	var wildcardLength:Int;
 	
-	public function new(notifier:Notifier<Dynamic>, uri:String, operation:String="==") 
+	public function new(notifier:Notifier<Dynamic>, uri:String, operation:String="==", wildcard:Bool=false) 
 	{
 		super(notifier, uri, operation);
 		wildcardLength = uri.indexOf("*");
 		if (wildcardLength > 0) {
-			wildcard = true;
+			this.wildcard = true;
 			wildcardValue = uri.substr(0, wildcardLength);
+		}
+
+		if (this.wildcard){
+			equalTo = stringEqualTo;
 		}
 	}
 	
-	override function equalTo(value1:Dynamic, value2:Dynamic) 
+	function stringEqualTo(value1:String, value2:String) 
 	{
 		if (value1 == null) value1 = "";
 		if (value2 == null) value2 = "";
@@ -37,7 +41,6 @@ class SceneCondition extends Condition
 			if (value1 == value2) return true;
 			return false;
 		}
-		
 	}
 
 	override function toString():String
