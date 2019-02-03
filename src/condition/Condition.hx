@@ -1,11 +1,6 @@
 package condition;
 
-#if notifier
-	import notifier.Notifier;
-#else
-	import imagsyd.notifier.Notifier;
-	import imagsyd.notifier.Notifier.BaseNotifier;
-#end
+import notifier.Notifier;
 
 import signal.Signal;
 import haxe.extern.EitherType;
@@ -15,7 +10,7 @@ import haxe.Constraints.Function;
  * ...
  * @author P.J.Shand
  */
- @:access(condition.Operation)
+@:access(condition.Operation)
 @:access(condition.Condition.Case)
 class Condition
 {
@@ -61,11 +56,7 @@ class Condition
 	function _add(_case:ICase)
 	{
 		currentCase = _case;
-		#if notifier
-			currentCase.add(onConditionChange, 1000);
-		#else
-			currentCase.change.add(onConditionChange, 1000);
-		#end
+		currentCase.add(onConditionChange, 1000);
 		cases.push(currentCase);
 		check();
 	}
@@ -78,11 +69,7 @@ class Condition
 			if (Std.is(cases[i], Case)){
 				var _case:Case = untyped cases[i];
 				if (_case.match(notifier, targetValue, operation, subProp, wildcard)){
-					#if notifier
-						_case.remove(onConditionChange);
-					#else
-						_case.change.remove(onConditionChange);
-					#end
+					_case.remove(onConditionChange);
 					cases.splice(i, 1);
 				}
 			}
@@ -101,11 +88,7 @@ class Condition
 			if (Std.is(cases[i], FuncCase)){
 				var _case:FuncCase = untyped cases[i];
 				if (_case.match(notifier, checkFunction)){
-					#if notifier
-						_case.remove(onConditionChange);
-					#else
-						_case.change.remove(onConditionChange);
-					#end
+					_case.remove(onConditionChange);
 					cases.splice(i, 1);
 				}
 			}
@@ -169,11 +152,7 @@ class Condition
 		var i:Int = cases.length - 1;
 		while (i >= 0) 
 		{
-			#if notifier
-				cases[i].remove(onConditionChange);
-			#else
-				cases[i].change.remove(onConditionChange);
-			#end
+			cases[i].remove(onConditionChange);
 			i--;
 		}
 		cases.splice(0, cases.length);
@@ -214,11 +193,7 @@ class Condition
 	}
 }
 
-#if notifier
 class Case extends Notifier<Bool> implements ICase
-#else
-class Case extends BaseNotifier<Bool> implements ICase
-#end
 {
 	public var notifier:Notifier<Dynamic>;
 	public var operation:Operation;
@@ -337,11 +312,7 @@ class Case extends BaseNotifier<Bool> implements ICase
 		return _clone;
 	}
 }
-#if notifier
 class FuncCase extends Notifier<Bool> implements ICase
-#else
-class FuncCase extends BaseNotifier<Bool> implements ICase
-#end
 {
 	public var bitOperator = BitOperator.AND;
 	var notifiers:Array<Notifier<Dynamic>>;
@@ -404,12 +375,8 @@ interface ICase
 	var bitOperator:BitOperator;
 	function check(forceDispatch:Bool = false):Bool;
 	
-	#if notifier
-		function add(callback:Void -> Void, ?fireOnce:Bool=false, ?priority:Int = 0, ?fireOnAdd:Null<Bool> = null):Void;
-		function remove(callback:EitherType<Bool, Void -> Void>=false):Void;
-	#else
-		var change:Signal0;
-	#end
+	function add(callback:Void -> Void, ?fireOnce:Bool=false, ?priority:Int = 0, ?fireOnAdd:Null<Bool> = null):Void;
+	function remove(callback:EitherType<Bool, Void -> Void>=false):Void;
 }
 
 class SignalA extends Signal
