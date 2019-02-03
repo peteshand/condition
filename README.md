@@ -1,15 +1,15 @@
-The aim of this library is to offer a way to encapsulate conditions within a portable object. The Condition object allows easy separation of logic and data within applications and will trigger active / inactive signals when it's state changes.
+The aim of this library is to offer a way to encapsulate conditional statements within a portable object. The Condition object allows easy separation of logic and data within applications and will trigger active / inactive signals when it's state changes.
 
 Conditions heavily rely on [Notifiers](https://github.com/peteshand/notifier), so if you're not already familiar with them head over to the github [README](https://github.com/peteshand/notifier) to find out more. 
 
-A Condition consists of one or more conditional operators statements.
+A Condition consists of one or more conditional operator statements.
 
 ##Simply Example
 ```
 var notifier = new Notifier<Int>(0);
 
 var condition = new Condition();
-condition.add(notifier, "==", 1); // currently not true
+condition.add(notifier, "==", 1); // currently false as notifier.value == 0
 ```
 
 There is a onActive and onInactive signal within the condition. Subscribing to these will trigger a callback whenever the condition's state changes to true or false respectively. Additionally when subscribing to onActive and onInactive the callback will be called immediately if the state corresponds to the signal, in the case of this example the onInactive callback will be triggered because notifier.value != 1.
@@ -189,4 +189,18 @@ var condition = new Condition().add(notifier1, 1).or().add(notifier2, 1);
 
 ##Nesting Conditions within Conditions
 
-TODO: add description
+It is also possible to nast Conditions within Conditions by adding the child Conditions's active notifier property to the parent Condition.
+
+```
+var notifier1 = new Notifier<Int>(0);
+var notifier2 = new Notifier<Int>(0);
+
+var childCondition1 = new Condition().add(notifier1, 1);
+var childCondition2 = new Condition().add(notifier2, 1);
+
+var parentCondition = new Condition()
+	.add(childCondition1.active, true)
+	.add(childCondition2.active, false);
+
+notifier1.value = 1; // will trigger parentCondition.onActive
+```

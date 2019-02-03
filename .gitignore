@@ -1,0 +1,12 @@
+# Compiled files
+*.exe
+*.n
+*.zip
+test/bin/
+
+# VisualStudio
+*.vcxproj
+*.vcxproj.filters
+*.sln
+Win32
+haxelib.dir
