@@ -1,9 +1,9 @@
 package condition;
 
 import notifier.Notifier;
-
 import signal.Signal;
 import haxe.extern.EitherType;
+import haxe.Timer;
 import utils.FunctionUtil;
 import haxe.Constraints.Function;
 /**
@@ -15,13 +15,17 @@ import haxe.Constraints.Function;
 class Condition
 {
 	var cases:Array<ICase> = [];
-	public var active = new Notifier<Bool>();
+	public var active = new Notifier<Bool>(true);
 	
 	public var onActive:SignalA;
 	public var onInactive:SignalA;
 	public var value(get, never):Bool;
 	
 	var currentCase:ICase;
+
+	public var activeDelay:Float = 0;
+	public var inactiveDelay:Float = 0;
+	var timer:Timer;
 
 	public function new() 
 	{
@@ -34,7 +38,7 @@ class Condition
 		});
 	}
 	
-	public function add(notifier:Notifier<Dynamic>, ?operation:Operation=EQUAL, targetValue:Dynamic=true, subProp:String=null, wildcard:Bool=false):Condition 
+	public function add(notifier:Notifier<Dynamic>, ?operation:Operation=EQUAL, targetValue:Dynamic=null, subProp:String=null, wildcard:Bool=false):Condition 
 	{
 		if (!Operation.valid(operation) && targetValue == true) {
 			// In the case that the targetValue is a string and the operation is not 
@@ -61,7 +65,7 @@ class Condition
 		check();
 	}
 
-	public function remove(notifier:Notifier<Dynamic>, ?operation:Operation=null, targetValue:Dynamic=null, subProp:String=null, wildcard:Bool=false):Condition 
+	public function remove(notifier:Notifier<Dynamic>, ?operation:Operation=null, targetValue:Dynamic = true, subProp:String=null, wildcard:Bool=false):Condition 
 	{
 		var i:Int = cases.length - 1;
 		while (i >= 0) 
@@ -129,9 +133,18 @@ class Condition
 	
 	function onConditionChange() 
 	{
-		active.value = checkWithPolicy(cases);
+		var value:Bool = checkWithPolicy(cases);
+		var delay:Float = inactiveDelay;
+		if (value) delay = activeDelay;
+		
+		if (timer != null){
+			timer.stop();
+			timer = null;
+		}
+		if (delay == 0) active.value = value;
+		else timer = Timer.delay(() -> { active.value = value; }, Math.floor(delay * 1000));
 	}
-	
+
 	function checkWithPolicy(cases:Array<ICase>) 
 	{
 		var bitOperator = BitOperator.AND;
