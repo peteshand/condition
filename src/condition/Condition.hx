@@ -177,7 +177,7 @@ class Condition
 		for (i in 0...cases.length) {
 			if (Std.is(cases[i], Case)){
 				var _case:Case = untyped cases[i];
-				_clone.add(_case.notifier, _case.targetValue, _case.operation, _case.subProp, _case.wildcard);
+				_clone.add(_case.notifier, _case.operation, _case.targetValue, _case.subProp, _case.wildcard);
 				if (_case.bitOperator == BitOperator.AND) _clone.and();
 				else if (_case.bitOperator == BitOperator.OR) _clone.or();
 				else if (_case.bitOperator == BitOperator.XOR) _clone.xor();
