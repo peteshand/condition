@@ -4,13 +4,14 @@
 	"license": "MIT",
 	"tags": ["condition", "state"],
 	"description": "method for defining conditions to trigger state changes",
-	"version": "1.2.1",
-	"releasenote": "fix case clone constructor",
+	"version": "1.2.2",
+	"releasenote": "Update clone method, add NumCases getter, add IConditionView and Robotlegs Extension",
 	"contributors": [ "p.j.shand" ],
 	"classPath": "src/",
 	"dependencies": {
 		"utils": "",
 		"notifier": "",
-		"signals": ""
+		"signals": "",
+		"transition": ""
 	}
 }
