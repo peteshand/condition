@@ -15,6 +15,7 @@ import haxe.Constraints.Function;
 class Condition
 {
 	var cases:Array<ICase> = [];
+	public var numCases(get, never):Int;
 	public var active = new Notifier<Bool>(true);
 	
 	public var onActive:SignalA;
@@ -40,9 +41,14 @@ class Condition
 	
 	public function add(notifier:Notifier<Dynamic>, ?operation:Operation=EQUAL, targetValue:Dynamic=null, subProp:String=null, wildcard:Bool=false):Condition 
 	{
-		if (!Operation.valid(operation) && targetValue == true) {
-			// In the case that the targetValue is a string and the operation is not 
-			// omitted then the targetValue will incorrectly be set into the operation
+		#if debug
+		if (!Operation.valid(operation)){
+			trace("invalid");
+		}
+		#end
+		if (!Operation.valid(operation) /*&& targetValue == true*/) {
+			// In the case that the targetValue is a string and the operation is omitted 
+			// then the targetValue will incorrectly be set into the operation
 			targetValue = operation;
 			operation = EQUAL;
 		}
@@ -171,22 +177,25 @@ class Condition
 		cases.splice(0, cases.length);
 	}
 	
-	public function clone():Condition
+	public function clone()
 	{
-		var _clone:Condition = new Condition();
-		for (i in 0...cases.length) {
-			if (Std.is(cases[i], Case)){
-				var _case:Case = untyped cases[i];
-				_clone.add(_case.notifier, _case.operation, _case.targetValue, _case.subProp, _case.wildcard);
-				if (_case.bitOperator == BitOperator.AND) _clone.and();
-				else if (_case.bitOperator == BitOperator.OR) _clone.or();
-				else if (_case.bitOperator == BitOperator.XOR) _clone.xor();
-			}
-			
-			
-		}
+		var _clone = new Condition();
+		copyCases(this, _clone);
 		_clone.check();
 		return _clone;
+	}
+
+	function copyCases(from:Condition, to:Condition)
+	{
+		for (i in 0...from.cases.length) {
+			if (Std.is(from.cases[i], Case)){
+				var _case:Case = untyped from.cases[i];
+				to.add(_case.notifier, _case.operation, _case.targetValue, _case.subProp, _case.wildcard);
+				if (_case.bitOperator == BitOperator.AND) to.and();
+				else if (_case.bitOperator == BitOperator.OR) to.or();
+				else if (_case.bitOperator == BitOperator.XOR) to.xor();
+			}
+		}
 	}
 	
 	function toString():String
@@ -203,6 +212,11 @@ class Condition
 	function get_value():Bool
 	{
 		return active.value;
+	}
+
+	function get_numCases():Int
+	{
+		return cases.length;
 	}
 }
 
