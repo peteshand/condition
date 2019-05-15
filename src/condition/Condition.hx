@@ -238,7 +238,8 @@ class Case extends Notifier<Bool> implements ICase {
 
 	public function new(notifier:Notifier<Dynamic>, ?operation:Operation = EQUAL, _targetValue:Dynamic, subProp:String = null, wildcard:Bool = false) {
 		this.operation = operation;
-
+		this.wildcard = wildcard;
+		
 		targetIsFunction = Reflect.isFunction(_targetValue);
 		if (targetIsFunction)
 			_targetFunction = _targetValue;
@@ -344,7 +345,8 @@ class Case extends Notifier<Bool> implements ICase {
 	}
 
 	override function toString():String {
-		return testValue + " " + operation + " " + targetValue;
+		if (wildcard) return testValue + " " + operation + " " + targetValue + "*";
+		else return testValue + " " + operation + " " + targetValue;
 		// return "[Case] " + testValue + " " + operation + " " + targetValue + " | " + value + " | " + (testValue == targetValue);
 	}
 
