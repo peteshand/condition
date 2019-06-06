@@ -29,10 +29,13 @@ class Condition {
 
 	var timer:Timer;
 
-	public function new() {
-		// bitOperator = BitOperator.AND;
+	public function new(?activeCallback:() -> Void, ?inactiveCallback:() -> Void) {
 		onActive = new SignalA(active, true);
 		onInactive = new SignalA(active, false);
+		if (activeCallback != null)
+			onActive.add(activeCallback);
+		if (inactiveCallback != null)
+			onInactive.add(inactiveCallback);
 		active.add(() -> {
 			if (active.value)
 				onActive.dispatch();
@@ -239,7 +242,7 @@ class Case extends Notifier<Bool> implements ICase {
 	public function new(notifier:Notifier<Dynamic>, ?operation:Operation = EQUAL, _targetValue:Dynamic, subProp:String = null, wildcard:Bool = false) {
 		this.operation = operation;
 		this.wildcard = wildcard;
-		
+
 		targetIsFunction = Reflect.isFunction(_targetValue);
 		if (targetIsFunction)
 			_targetFunction = _targetValue;
@@ -345,8 +348,10 @@ class Case extends Notifier<Bool> implements ICase {
 	}
 
 	override function toString():String {
-		if (wildcard) return testValue + " " + operation + " " + targetValue + "*";
-		else return testValue + " " + operation + " " + targetValue;
+		if (wildcard)
+			return testValue + " " + operation + " " + targetValue + "*";
+		else
+			return testValue + " " + operation + " " + targetValue;
 		// return "[Case] " + testValue + " " + operation + " " + targetValue + " | " + value + " | " + (testValue == targetValue);
 	}
 
