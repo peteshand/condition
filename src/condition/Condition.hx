@@ -6,6 +6,8 @@ import haxe.extern.EitherType;
 import haxe.Timer;
 import utils.FunctionUtil;
 import haxe.Constraints.Function;
+import condition.modifier.DefaultModifier;
+import condition.modifier.IModifier;
 
 /**
  * ...
@@ -45,7 +47,7 @@ class Condition {
 	}
 
 	public function add(notifier:Notifier<Dynamic>, ?operation:Operation = EQUAL, targetValue:Dynamic = null, subProp:String = null,
-			wildcard:Bool = false):Condition {
+			wildcard:Bool = false, modifier:IModifier = null):Condition {
 		#if debug
 		if (!Operation.valid(operation)) {
 			trace("invalid");
@@ -58,12 +60,12 @@ class Condition {
 			operation = EQUAL;
 		}
 
-		_add(new Case(notifier, operation, targetValue, subProp, wildcard));
+		_add(new Case(notifier, operation, targetValue, subProp, wildcard, modifier));
 		return this;
 	}
 
-	public function addFunc(notifier:NotifierOrArray, checkFunction:Function):Condition {
-		_add(new FuncCase(notifier, checkFunction));
+	public function addFunc(notifier:NotifierOrArray, checkFunction:Function, modifier:IModifier = null):Condition {
+		_add(new FuncCase(notifier, checkFunction, modifier));
 		return this;
 	}
 
@@ -84,6 +86,19 @@ class Condition {
 					_case.remove(onConditionChange);
 					cases.splice(i, 1);
 				}
+			}
+			i--;
+		}
+		return this;
+	}
+
+	public function removeAll():Condition {
+		var i:Int = cases.length - 1;
+		while (i >= 0) {
+			if (Std.is(cases[i], Case)) {
+				var _case:Case = untyped cases[i];
+				_case.remove(onConditionChange);
+				cases.splice(i, 1);
 			}
 			i--;
 		}
@@ -224,11 +239,13 @@ class Condition {
 }
 
 class Case extends Notifier<Bool> implements ICase {
+	static var defaultModifier = new DefaultModifier();
 	public var notifier:Notifier<Dynamic>;
 	public var operation:Operation;
 	public var subProp:String;
 	public var wildcard:Bool;
 	public var bitOperator = BitOperator.AND;
+	public var modifier:IModifier;
 
 	var targetIsFunction:Bool;
 	var testValue(get, null):Dynamic;
@@ -238,10 +255,16 @@ class Case extends Notifier<Bool> implements ICase {
 	var _targetValue:Dynamic;
 	var _targetFunction:Void->Dynamic;
 	var getValue:Dynamic->Dynamic->Bool;
-
-	public function new(notifier:Notifier<Dynamic>, ?operation:Operation = EQUAL, _targetValue:Dynamic, subProp:String = null, wildcard:Bool = false) {
+	
+	public function new(notifier:Notifier<Dynamic>, ?operation:Operation = EQUAL, _targetValue:Dynamic, subProp:String = null, wildcard:Bool = false, _modifier:IModifier = null) {
 		this.operation = operation;
 		this.wildcard = wildcard;
+
+		if (_modifier != null){
+			modifier = _modifier;
+		} else {
+			modifier = defaultModifier;
+		}
 
 		targetIsFunction = Reflect.isFunction(_targetValue);
 		if (targetIsFunction)
@@ -288,13 +311,22 @@ class Case extends Notifier<Bool> implements ICase {
 
 	public function check(forceDispatch:Bool = false):Bool {
 		if (targetIsFunction)
-			this.value = _targetFunction();
+			//this.value = _targetFunction();
+			modifier.setValue(_targetFunction(), forceDispatch, onModChange);
 		else
-			this.value = getValue(testValue, targetValue);
+			//this.value = getValue(testValue, targetValue);
+			modifier.setValue(getValue(testValue, targetValue), forceDispatch, onModChange);
 
+		//if (forceDispatch)
+		//	this.dispatch();
+		return modifier.value;
+	}
+
+	function onModChange(value:Bool, forceDispatch:Bool)
+	{
+		this.value = modifier.value;
 		if (forceDispatch)
 			this.dispatch();
-		return this.value;
 	}
 
 	function get_testValue() {
@@ -379,17 +411,24 @@ class Case extends Notifier<Bool> implements ICase {
 }
 
 class FuncCase extends Notifier<Bool> implements ICase {
+	static var defaultModifier = new DefaultModifier();
 	public var bitOperator = BitOperator.AND;
 	public var notifiers:Array<Notifier<Dynamic>>;
 	public var checkFunction:Function;
+	public var modifier:IModifier;
 
 	var isArray:Bool;
 	var values:Array<Dynamic> = [];
 
-	public function new(value:NotifierOrArray, checkFunction:Function) {
+	public function new(value:NotifierOrArray, checkFunction:Function, _modifier:IModifier = null) {
 		super();
 
 		this.checkFunction = checkFunction;
+		if (_modifier != null){
+			modifier = _modifier;
+		} else {
+			modifier = defaultModifier;
+		}
 
 		if (Std.is(value, Array)) {
 			this.notifiers = value;
@@ -435,8 +474,16 @@ class FuncCase extends Notifier<Bool> implements ICase {
 	public function check(forceDispatch:Bool = false):Bool {
 		for (i in 0...notifiers.length)
 			values[i] = notifiers[i].value;
-		this.value = FunctionUtil.dispatch(checkFunction, values);
-		return this.value;
+		//this.value = FunctionUtil.dispatch(checkFunction, values);
+		modifier.setValue(FunctionUtil.dispatch(checkFunction, values), forceDispatch, onModChange);
+		return modifier.value;
+	}
+
+	function onModChange(value:Bool, forceDispatch:Bool)
+	{
+		this.value = modifier.value;
+		if (forceDispatch)
+			this.dispatch();
 	}
 }
 
