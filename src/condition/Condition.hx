@@ -46,8 +46,8 @@ class Condition {
 		});
 	}
 
-	public function add(notifier:Notifier<Dynamic>, ?operation:Operation = EQUAL, targetValue:Dynamic = null, subProp:String = null,
-			wildcard:Bool = false, modifier:IModifier = null):Condition {
+	public function add(notifier:Notifier<Dynamic>, ?operation:Operation = EQUAL, targetValue:Dynamic = null, subProp:String = null, wildcard:Bool = false,
+			modifier:IModifier = null):Condition {
 		#if debug
 		if (!Operation.valid(operation)) {
 			trace("invalid");
@@ -200,7 +200,7 @@ class Condition {
 		return _clone;
 	}
 
-	function copyCases(from:Condition, to:Condition, startIndex:Int=0) {
+	function copyCases(from:Condition, to:Condition, startIndex:Int = 0) {
 		for (i in startIndex...from.cases.length) {
 			var _icase:ICase = null;
 			if (Std.is(from.cases[i], Case)) {
@@ -242,6 +242,7 @@ class Condition {
 
 class Case extends Notifier<Bool> implements ICase {
 	static var defaultModifier = new DefaultModifier();
+
 	public var notifier:Notifier<Dynamic>;
 	public var operation:Operation;
 	public var subProp:String;
@@ -255,14 +256,16 @@ class Case extends Notifier<Bool> implements ICase {
 	public var targetValue(get, null):Dynamic;
 
 	public var _targetValue:Dynamic;
+
 	var _targetFunction:Void->Dynamic;
 	var getValue:Dynamic->Dynamic->Bool;
-	
-	public function new(notifier:Notifier<Dynamic>, ?operation:Operation = EQUAL, _targetValue:Dynamic, subProp:String = null, wildcard:Bool = false, _modifier:IModifier = null) {
+
+	public function new(notifier:Notifier<Dynamic>, ?operation:Operation = EQUAL, _targetValue:Dynamic, subProp:String = null, wildcard:Bool = false,
+			_modifier:IModifier = null) {
 		this.operation = operation;
 		this.wildcard = wildcard;
 
-		if (_modifier != null){
+		if (_modifier != null) {
 			modifier = _modifier;
 		} else {
 			modifier = defaultModifier;
@@ -272,7 +275,6 @@ class Case extends Notifier<Bool> implements ICase {
 		targetIsFunction = Reflect.isFunction(_targetValue);
 		if (targetIsFunction)
 			_targetFunction = _targetValue;
-			
 
 		this.notifier = notifier;
 		this.subProp = subProp;
@@ -313,19 +315,18 @@ class Case extends Notifier<Bool> implements ICase {
 
 	public function check(forceDispatch:Bool = false):Void {
 		if (targetIsFunction)
-			//this.value = _targetFunction();
+			// this.value = _targetFunction();
 			modifier.setValue(_targetFunction(), forceDispatch, onModChange);
 		else
-			//this.value = getValue(testValue, targetValue);
+			// this.value = getValue(testValue, targetValue);
 			modifier.setValue(getValue(testValue, targetValue), forceDispatch, onModChange);
 
-		//if (forceDispatch)
+		// if (forceDispatch)
 		//	this.dispatch();
-		//return this.value;
+		// return this.value;
 	}
 
-	function onModChange(value:Bool, forceDispatch:Bool)
-	{
+	function onModChange(value:Bool, forceDispatch:Bool) {
 		this.value = modifier.value;
 		if (forceDispatch)
 			this.dispatch();
@@ -334,8 +335,7 @@ class Case extends Notifier<Bool> implements ICase {
 	function get_testValue() {
 		if (subProp == null) {
 			return notifier.value;
-		}
-		else {
+		} else {
 			var split:Array<String> = subProp.split(".");
 			if (subProp.indexOf(".") == -1)
 				split = [subProp];
@@ -415,6 +415,7 @@ class Case extends Notifier<Bool> implements ICase {
 
 class FuncCase extends Notifier<Bool> implements ICase {
 	static var defaultModifier = new DefaultModifier();
+
 	public var bitOperator = BitOperator.AND;
 	public var notifiers:Array<Notifier<Dynamic>>;
 	public var checkFunction:Function;
@@ -425,9 +426,9 @@ class FuncCase extends Notifier<Bool> implements ICase {
 
 	public function new(value:NotifierOrArray, checkFunction:Function, _modifier:IModifier = null) {
 		super();
-		
+
 		this.checkFunction = checkFunction;
-		if (_modifier != null){
+		if (_modifier != null) {
 			modifier = _modifier;
 		} else {
 			modifier = defaultModifier;
@@ -477,13 +478,12 @@ class FuncCase extends Notifier<Bool> implements ICase {
 	public function check(forceDispatch:Bool = false):Void {
 		for (i in 0...notifiers.length)
 			values[i] = notifiers[i].value;
-		//this.value = FunctionUtil.dispatch(checkFunction, values);
+		// this.value = FunctionUtil.dispatch(checkFunction, values);
 		modifier.setValue(FunctionUtil.dispatch(checkFunction, values), forceDispatch, onModChange);
-		//return modifier.value;
+		// return modifier.value;
 	}
 
-	function onModChange(value:Bool, forceDispatch:Bool)
-	{
+	function onModChange(value:Bool, forceDispatch:Bool) {
 		this.value = modifier.value;
 		if (forceDispatch)
 			this.dispatch();
@@ -494,7 +494,8 @@ interface ICase {
 	var bitOperator:BitOperator;
 	var value(get, set):Null<Bool>;
 	function check(forceDispatch:Bool = false):Void;
-	function add(callback:Void->Void, ?fireOnce:Bool = false, ?priority:Int = 0, ?fireOnAdd:Null<Bool> = null):Void;
+	// function add(callback:Void->Void, ?fireOnce:Bool = false, ?priority:Int = 0, ?fireOnAdd:Null<Bool> = null):Void;
+	function add(callback:Void->Void, ?fireOnAdd:Null<Bool> = null, ?repeat:Int = -1, ?priority:Int = 0):Void;
 	function remove(callback:EitherType<Bool, Void->Void> = false):Void;
 }
 
@@ -508,11 +509,12 @@ class SignalA extends Signal {
 		this.target = target;
 	}
 
-	override public function add(callback:Void->Void, ?fireOnce:Bool = false, ?priority:Int = 0, ?fireOnAdd:Null<Bool> = null):Void {
+	// override public function add(callback:Void->Void, ?fireOnce:Bool = false, ?priority:Int = 0, ?fireOnAdd:Null<Bool> = null):Void {
+	override public function add(callback:Void->Void, ?fireOnAdd:Null<Bool> = null, ?repeat:Int = -1, ?priority:Int = 0):Void {
 		callbacks.push({
 			callback: callback,
 			callCount: 0,
-			fireOnce: fireOnce,
+			repeat: repeat,
 			priority: priority,
 			remove: false
 		});
