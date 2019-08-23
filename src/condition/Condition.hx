@@ -71,7 +71,7 @@ class Condition {
 
 	function _add(_case:ICase) {
 		currentCase = _case;
-		currentCase.add(onConditionChange, 1000);
+		currentCase.add(onConditionChange).priority(1000);
 		cases.push(currentCase);
 		check();
 	}
@@ -302,7 +302,7 @@ class Case extends Notifier<Bool> implements ICase {
 
 		notifier.add(() -> {
 			check();
-		}, 1000);
+		}).priority(1000);
 		check();
 	}
 
@@ -446,7 +446,7 @@ class FuncCase extends Notifier<Bool> implements ICase {
 			values.push(notifiers[i].value);
 			notifiers[i].add(() -> {
 				check();
-			}, 1000);
+			}).priority(1000);
 		}
 
 		check();
@@ -494,8 +494,11 @@ interface ICase {
 	var bitOperator:BitOperator;
 	var value(get, set):Null<Bool>;
 	function check(forceDispatch:Bool = false):Void;
-	// function add(callback:Void->Void, ?fireOnce:Bool = false, ?priority:Int = 0, ?fireOnAdd:Null<Bool> = null):Void;
-	function add(callback:Void->Void, ?fireOnAdd:Null<Bool> = null, ?repeat:Int = -1, ?priority:Int = 0):Void;
+	function add(callback:Void->Void, ?fireOnce:Bool = false, ?priority:Int = 0, ?fireOnAdd:Null<Bool> = null):BaseSignal<Void->Void>;
+	// function add(callback:Void->Void):BaseSignal<Void->Void>;
+	function priority(value:Int):BaseSignal<Void->Void>;
+	function repeat(value:Int = -1):BaseSignal<Void->Void>;
+	function fireOnAdd():Void;
 	function remove(callback:EitherType<Bool, Void->Void> = false):Void;
 }
 
@@ -509,22 +512,14 @@ class SignalA extends Signal {
 		this.target = target;
 	}
 
-	// override public function add(callback:Void->Void, ?fireOnce:Bool = false, ?priority:Int = 0, ?fireOnAdd:Null<Bool> = null):Void {
-	override public function add(callback:Void->Void, ?fireOnAdd:Null<Bool> = null, ?repeat:Int = -1, ?priority:Int = 0):Void {
-		callbacks.push({
-			callback: callback,
-			callCount: 0,
-			repeat: repeat,
-			priority: priority,
-			remove: false
-		});
-		if (priority != 0)
-			priorityUsed = true;
-		if (priorityUsed == true)
-			requiresSort = true;
+	// override public function add(callback:Void->Void):Signal {
+	//  super.add(callback);
+	override public function add(callback:Void->Void, ?fireOnce:Bool = false, ?priority:Int = 0, ?fireOnAdd:Null<Bool> = null):Signal {
+		super.add(callback, fireOnce, priority, fireOnAdd);
 
 		if (active.value == target)
 			callback();
+		return this;
 	}
 }
 
