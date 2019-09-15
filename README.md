@@ -2,14 +2,13 @@ The aim of this library is to offer a way to encapsulate conditional statements 
 
 Conditions heavily rely on [Notifiers](https://github.com/peteshand/notifier), so if you're not already familiar with them head over to the github [README](https://github.com/peteshand/notifier) to find out more. 
 
-A Condition consists of one or more conditional operator statements.
+A Condition consists of one or more conditional operator statements and is constructed via the static macro method `make`. the `make` method expects one or more binary operator operations with one or more notifiers being used within the operation/s. When any of the notifiers that was using within the operations the Condition will check the result of the binary operator operations and condition's `value` to true or false, and call onActive or onInactive accordingly.
 
 ##Simply Example
 ```
 var notifier = new Notifier<Int>(0);
 
-var condition = new Condition();
-condition.add(notifier, "==", 1); // currently false as notifier.value == 0
+var condition = Condition.make(notifier.value == 1); // currently false as notifier.value == 0
 ```
 
 There is a onActive and onInactive signal within the condition. Subscribing to these will trigger a callback whenever the condition's state changes to true or false respectively. Additionally when subscribing to onActive and onInactive the callback will be called immediately if the state corresponds to the signal, in the case of this example the onInactive callback will be triggered because notifier.value != 1.
@@ -23,6 +22,17 @@ condition.onInactive.add(() -> {
 });
 
 notifier.value = 1; // this will trigger the onActive callback because notifier.value == 1
+```
+
+Alternatively
+
+```
+condition.add((active:Bool) -> {
+	if (active) trace("This is be triggered when notifier.value == 1");
+	else trace("This is be triggered when notifier.value != 1");
+});
+
+notifier.value = 1; // this will trigger the callback with active == true
 ```
 
 The above is equivalent to the following:
@@ -50,73 +60,26 @@ function set_value(v:Int):Int
 
 While with a simple case there isn't a huge different in the amount of code involved, the "Condition" approach allows for portability of the statement and as more complex cases are required the difference in the amount of required code and readability becomes more obvious.
 
-###Arguments
-There are 5 arguments in the add function.
+##Combining Conditions
+
+The .or .and and .xor methods can be used to combine condition requirements.
 
 ```
-add(notifier:Notifier<Dynamic>, operation:Operation="==", targetValue:Dynamic=true, subProp:String=null, wildcard:Bool=false):Condition
-```
-* notifier:Notifier\<Dynamic> (**mandatory**), When the notifiers value property is set this will trigger a check of if the Condition is active or inactive.
-* operation:Operation (**optional, default: ==**). This is the comparison operator to use on the condition statement, eg: "notifier.value == true". Available options are: 
-  * **==** 
-  * **!=**
-  * **<=**
-  * **<**
-  * **>=**
-  * **>**
-* targetValue:Dynamic (**optional, default: true**). This is the target value for the notifier
-* subProp:String (**optional, default: null**). This can be used to check the value of a subProperty of a notifier's value object. Example below:
-* wildcard:Bool (**optional, default: false**). This is only used when the Notifier is of type Notifier\<String>. When set to true only a partial match is required. Example below.
+var notifier1 = new Notifier<Int>(0);
+var notifier2 = new Notifier<Int>(0);
 
-##SubProp Example
-```
-typedef Data = { example:String }
-var data = new Notifier<Data>;
-var condition = new Condition();
-condition.add(data, "==", "foo", "example");
-condition.onActive.add(() -> {
-	trace("This is be triggered when notifier.value is set and it's sub property data.example == 'foo'");
-});
-data.value = { example:"test" }; // this will not trigger onActive;
-data.value = { example:"foo" }; // this will trigger onActive;
-
-// equivalent to: /////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////
-
-@:isVar var value(default, set):Data = 0;
-var targetValue:String = "foo";
-
-public function new()
-{
-	this.value = { example:"foo" };
-}
-
-function set_value(v:Data):Data
-{
-	if (this.value = v) return v;
-	if (v.example == targetValue){
-		trace("This is be triggered when v.example == foo");
-	} else {
-		trace("This is be triggered when v.example != foo");
-	}
-	this.value = v;
-}
+var condition1 = Condition.make(notifier1.value == 1);
+var condition2 = Condition.make(notifier2.value == 4);
+condition1.or(condition2);
 
 ```
 
-##Wildcard Example
-```
-var rout = new Notifier<String>();
+##Cloning
 
-var condition = new Condition();
-condition.add(rout, "app://main", "==", true);
-condition.onActive.add(() -> {
-	trace("This is be triggered when rout.value contains "app://main");
-});
-condition.onInactive.add(() -> {
-	trace("This is be triggered when rout.value does not contain "app://main");
-});
-rout.value = "app://main/page1"; // active
+```
+var condition1 = Condition.make(notifier1.value == 1);
+var condition2 = condition1.clone();
+
 ```
 
 ##Multiple Notifiers Example
@@ -125,82 +88,8 @@ It's possible to add multiple cases into a single Condition. By default all case
 
 ```
 var notifier1 = new Notifier<Int>(0);
-var notifier2 = new Notifier<Int>(0);
+var notifier2 = new Notifier<Bool>(true);
 var notifier3 = new Notifier<Int>(0);
 
-var condition = new Condition();
-condition.add(notifier1, 1, "==");
-condition.or();
-condition.add(notifier2, 1, "==");
-condition.and();
-condition.add(notifier3, 1, "==");
-
-//equivalent to
-
-if ((notifier1.value == 1 || notifier2.value == 1) && notifier3.value == 1){
-
-}
-```
-
-##addFunc
-
-For complex precedence it is recommended to use the addFunc method which has a slightly different signature to add and is a little more manual in the way that it works.
-
-```
-addFunc(notifier:Notifier<Dynamic> || Array<Notifier<Dynamic>>, checkFunction:Function):Condition
-```
-
-* notifier:Notifier\<Dynamic> or Array\<Notifier\<Dynamic>> (**mandatory**), When the notifiers value property is set this will trigger a check of if the Condition is active or inactive.
-* checkFunction: Function (**mandatory**). This function will be called everytime the notifier/s value changes. The function expects the same numver of params as there are notifiers past to the notifier value and should return true or false depending on if the condition should be active or inactive.
-eg:
-
-```
-if (value1 == true || ((value2 < 2 && value3 == 3) || value4 == false)) {
-	return true;
-}
-```
-
-
-```
-var notifier1 = new Notifier<Bool>(0);
-var notifier2 = new Notifier<Int>(0);
-var notifier3 = new Notifier<Int>(0);
-var notifier4 = new Notifier<Bool>(0);
-
-var condition = new Condition();
-condition.addFunc(
-	[notifier1, notifier2, notifier3, notifier4], 
-	(v1:Bool, v2:Int, v3:Int, v4:Bool) -> {
-		return v1 == true || ((v2 < 2 && v3 == 3) || v4 == false);
-	}
-);
-```
-
-##Daisychaining
-
-The majority of condition methods return this which allows for daisy chaining.
-
-```
-var notifier1 = new Notifier<Int>(0);
-var notifier2 = new Notifier<Int>(0);
-
-var condition = new Condition().add(notifier1, 1).or().add(notifier2, 1);
-```
-
-##Nesting Conditions within Conditions
-
-It is also possible to nast Conditions within Conditions by adding the child Conditions's active notifier property to the parent Condition.
-
-```
-var notifier1 = new Notifier<Int>(0);
-var notifier2 = new Notifier<Int>(0);
-
-var childCondition1 = new Condition().add(notifier1, 1);
-var childCondition2 = new Condition().add(notifier2, 1);
-
-var parentCondition = new Condition()
-	.add(childCondition1.active, true)
-	.add(childCondition2.active, false);
-
-notifier1.value = 1; // will trigger parentCondition.onActive
+var condition = Condition( (notifier1.value == 1 || notifier2.value == false) && notifier3.value == 0);
 ```
