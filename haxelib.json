@@ -4,8 +4,8 @@
 	"license": "MIT",
 	"tags": ["condition", "state"],
 	"description": "method for defining conditions to trigger state changes",
-	"version": "2.0.4",
-	"releasenote": "macro constructor and Api update",
+	"version": "2.0.9",
+	"releasenote": "update checkWithPolicy order",
 	"contributors": [ "p.j.shand" ],
 	"classPath": "src/",
 	"dependencies": {
