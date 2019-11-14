@@ -80,6 +80,8 @@ class Condition extends Notifier<Bool> {
 					return true;
 			case EReturn(e):
 				findNotifiers(e, props, nextLevel);
+			case EParenthesis(e):
+				findNotifiers(e, props, nextLevel);
 			case ECall(e, params):
 				findNotifiers(e, props, nextLevel);
 				for (expr in params) {

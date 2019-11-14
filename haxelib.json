@@ -4,8 +4,8 @@
 	"license": "MIT",
 	"tags": ["condition", "state"],
 	"description": "method for defining conditions to trigger state changes",
-	"version": "2.0.9",
-	"releasenote": "update checkWithPolicy order",
+	"version": "2.0.10",
+	"releasenote": "add EParenthesis to Condition.make",
 	"contributors": [ "p.j.shand" ],
 	"classPath": "src/",
 	"dependencies": {
