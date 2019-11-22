@@ -1,7 +1,7 @@
 package condition;
 
 import notifier.Notifier;
-import signal.Signal;
+import signals.Signal;
 import haxe.extern.EitherType;
 import haxe.Timer;
 import haxe.macro.Expr;
@@ -35,35 +35,22 @@ class Condition extends Notifier<Bool> {
 	}
 
 	#if macro
-	public static function findNotifiers(e:haxe.macro.Expr, props:Array<String>, level:Int) {
+	public static function findNotifiers(e:haxe.macro.Expr, notifiers:Array<String>, level:Int) {
 		if (e == null)
 			return false;
-		//
-		//
-
-		// trace("\n\n");
-		// trace(e.expr);
 		var nextLevel:Int = level + 1;
 		switch (e.expr) {
 			case EField(e, field):
-				var type:haxe.macro.Type = Context.typeof(Context.parse(e.toString(), Context.currentPos()));
-				if (isNotifier(type)) {
-					props.push(e.toString());
+				if (isNotifier(e)) {
+					notifiers.push(e.toString());
 				}
 			case EConst(CIdent(s)):
 				switch (s) {
 					case 'null' | 'true' | 'false':
 					default:
-						// var type:haxe.macro.Type = Context.typeof(Context.parse(s, Context.currentPos()));
-						// var classType:haxe.macro.Type.ClassType = type.getClass();
-						// if (classType.module == 'notifier.Notifier') {
-						//	props.push(s);
-						// }
-
 						try {
-							var type:haxe.macro.Type = Context.typeof(Context.parse(s, Context.currentPos()));
-							if (isNotifier(type)) {
-								props.push(s);
+							if (isNotifier(s)) {
+								notifiers.push(s);
 							}
 						} catch (e:Dynamic) {
 							// trace(e);
@@ -72,52 +59,75 @@ class Condition extends Notifier<Bool> {
 			case EConst(CInt(s) | CFloat(s) | CString(s)):
 			// ignore
 			case EBinop(_, e1, e2):
-				findNotifiers(e1, props, nextLevel);
-				findNotifiers(e2, props, nextLevel);
+				findNotifiers(e1, notifiers, nextLevel);
+				findNotifiers(e2, notifiers, nextLevel);
 			case EFunction(name, f):
-				findNotifiers(f.expr, props, nextLevel);
+				findNotifiers(f.expr, notifiers, nextLevel);
 				if (level == 0)
 					return true;
 			case EReturn(e):
-				findNotifiers(e, props, nextLevel);
+				findNotifiers(e, notifiers, nextLevel);
 			case EParenthesis(e):
-				findNotifiers(e, props, nextLevel);
+				findNotifiers(e, notifiers, nextLevel);
 			case ECall(e, params):
-				findNotifiers(e, props, nextLevel);
+				findNotifiers(e, notifiers, nextLevel);
 				for (expr in params) {
-					findNotifiers(expr, props, nextLevel);
+					findNotifiers(expr, notifiers, nextLevel);
 				}
 			case EMeta(s, e):
-				findNotifiers(e, props, nextLevel);
+				findNotifiers(e, notifiers, nextLevel);
 			case EIf(econd, eif, eelse):
-				findNotifiers(econd, props, nextLevel);
-				findNotifiers(eif, props, nextLevel);
-				findNotifiers(eelse, props, nextLevel);
+				findNotifiers(econd, notifiers, nextLevel);
+				findNotifiers(eif, notifiers, nextLevel);
+				findNotifiers(eelse, notifiers, nextLevel);
 			case EBlock(exprs):
 				for (expr in exprs) {
-					// trace("1 expr: " + expr);
-					findNotifiers(expr, props, nextLevel);
+					findNotifiers(expr, notifiers, nextLevel);
 				}
 			case EUnop(op, postFix, e):
-				findNotifiers(e, props, nextLevel);
+				findNotifiers(e, notifiers, nextLevel);
 			case EVars(vars):
 				for (_var in vars) {
-					findNotifiers(_var.expr, props, nextLevel);
+					findNotifiers(_var.expr, notifiers, nextLevel);
 				}
-			case EParenthesis(e):
-				findNotifiers(e, props, nextLevel);
+			case EFor(it, expr):
+				findNotifiers(it, notifiers, nextLevel);
+				findNotifiers(expr, notifiers, nextLevel);
 			case _:
 				trace("unhandled: " + e.expr);
 		}
 		return false;
 	}
 
-	static function isNotifier(type:haxe.macro.Type) {
+	static function isNotifier(?e:haxe.macro.Expr, ?type:haxe.macro.Type, ?s:String) {
+		if (type == null) {
+			if (e != null) {
+				// type = Context.typeof(Context.parse(e.toString(), Context.currentPos()));
+				type = Context.typeof(e);
+			} else if (s != null) {
+				type = Context.typeof(Context.parse(s, Context.currentPos()));
+				// trace(type);
+			}
+			if (type == null) {
+				return null;
+			}
+		}
+
 		switch (type) {
 			case TInst(t, params):
 				var classType:ClassType = type.getClass();
 				return inherents(classType);
+			case TType(t, params):
+				for (param in params) {
+					isNotifier(param);
+				}
+			case TAbstract(t, params):
+				for (param in params) {
+					isNotifier(param);
+				}
+
 			case _:
+				trace("unhandled: " + type);
 				// ignore
 		}
 		return false;
