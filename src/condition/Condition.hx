@@ -93,6 +93,9 @@ class Condition extends Notifier<Bool> {
 			case EFor(it, expr):
 				findNotifiers(it, notifiers, nextLevel);
 				findNotifiers(expr, notifiers, nextLevel);
+			case EArray(e1, e2):
+				findNotifiers(e1, notifiers, nextLevel);
+				findNotifiers(e2, notifiers, nextLevel);
 			case _:
 				trace("unhandled: " + e.expr);
 		}
