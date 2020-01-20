@@ -35,25 +35,31 @@ class Condition extends Notifier<Bool> {
 	}
 
 	#if macro
-	public static function findNotifiers(e:haxe.macro.Expr, notifiers:Array<String>, level:Int) {
+	public static function findNotifiers(?e:haxe.macro.Expr, ?edef:haxe.macro.ExprDef, notifiers:Array<String>, level:Int) {
 		if (e == null)
 			return false;
 		var nextLevel:Int = level + 1;
-		switch (e.expr) {
-			case EField(e, field):
-				if (isNotifier(e)) {
-					notifiers.push(e.toString());
+		if (edef == null) {
+			edef = e.expr;
+		}
+		switch (edef) {
+			case EField(e2, field):
+				for (expr in e2.expr.getParameters()) {
+					findNotifiers(expr, notifiers, nextLevel);
 				}
+				isNotifier(e2, notifiers);
 			case EConst(CIdent(s)):
 				switch (s) {
 					case 'null' | 'true' | 'false':
 					default:
 						try {
-							if (isNotifier(s)) {
-								notifiers.push(s);
-							}
+							isNotifier(s, notifiers);
+
+							// if (isNotifier(s, notifiers)) {
+							//	notifiers.push(s);
+							// }
 						} catch (e:Dynamic) {
-							// trace(e);
+							trace(e);
 						}
 				}
 			case EConst(CInt(s) | CFloat(s) | CString(s)):
@@ -96,13 +102,21 @@ class Condition extends Notifier<Bool> {
 			case EArray(e1, e2):
 				findNotifiers(e1, notifiers, nextLevel);
 				findNotifiers(e2, notifiers, nextLevel);
+			// case TFun(args):
+			//	for (arg in args) {
+			//		if (isNotifier(arg.t)) {
+			//			notifiers.push(e.toString());
+			//		}
+			//	}
+			case null:
+			//
 			case _:
 				trace("unhandled: " + e.expr);
 		}
 		return false;
 	}
 
-	static function isNotifier(?e:haxe.macro.Expr, ?type:haxe.macro.Type, ?s:String) {
+	static function isNotifier(?e:haxe.macro.Expr, ?type:haxe.macro.Type, ?s:String, ?notifiers:Array<String>, debug:Bool = false):Void {
 		if (type == null) {
 			if (e != null) {
 				// type = Context.typeof(Context.parse(e.toString(), Context.currentPos()));
@@ -112,28 +126,55 @@ class Condition extends Notifier<Bool> {
 				// trace(type);
 			}
 			if (type == null) {
-				return null;
+				return;
 			}
 		}
-
+		/*{
+			name: map,
+			t: TInst(notifier.MapNotifier, [
+				TAbstract(Int, []),
+				TType(tac.science.model.leaderboard.TeamLeaderData, [])
+			]),
+			opt: false
+		}*/
+		// if (debug) {
+		// }
 		switch (type) {
 			case TInst(t, params):
 				var classType:ClassType = type.getClass();
-				return inherents(classType);
+				if (inherents(classType)) {
+					addToNotifiers(e, s, notifiers);
+				}
+				for (param in params) {
+					isNotifier(param, notifiers, debug);
+				}
+			// return inherents(classType);
 			case TType(t, params):
 				for (param in params) {
-					isNotifier(param);
+					isNotifier(param, notifiers, debug);
 				}
 			case TAbstract(t, params):
 				for (param in params) {
-					isNotifier(param);
+					isNotifier(param, notifiers, debug);
 				}
+			case TAnonymous(a):
 
+			case TFun(args, ret):
+				for (arg in args) {
+					isNotifier(arg.t, notifiers, debug);
+				}
 			case _:
 				trace("unhandled: " + type);
 				// ignore
 		}
-		return false;
+		// return false;
+	}
+
+	static function addToNotifiers(?e:haxe.macro.Expr, ?s:String, ?notifiers:Array<String>) {
+		if (e != null)
+			notifiers.push(e.toString());
+		else if (s != null)
+			notifiers.push(s);
 	}
 
 	static function inherents(classType:ClassType):Bool {

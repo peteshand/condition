@@ -4,8 +4,8 @@
 	"license": "MIT",
 	"tags": ["condition", "state"],
 	"description": "method for defining conditions to trigger state changes",
-	"version": "2.0.11",
-	"releasenote": "add EFor to Condition.make",
+	"version": "2.0.12",
+	"releasenote": "tweak findNotifier logic",
 	"contributors": [ "p.j.shand" ],
 	"classPath": "src/",
 	"dependencies": {
